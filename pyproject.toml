@@ -1,7 +1,9 @@
 [project]
 name = "prepare2play-learningexperiencev2"
 version = "0.1.0"
-description = "Add your description here"
+description = "Second version of student created vector overlay processing code. Currently in development."
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.141.1",
+]

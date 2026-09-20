@@ -13,7 +13,6 @@ from scipy import ndimage, datasets
 
 class VectorOverlay:
     fps_annotated = 120
-    " abt fps"
     force_scaling = 0.8
 
     frame_width = int(cap.get(cap.CAP_PROP_FRAME_WIDTH))
@@ -34,15 +33,15 @@ class VectorOverlay:
         force_data = df_aligned.copy()
 
         # Calculate maximum absolute values out of all forces
-        max_z_force = max(force_data['FP1_Az'].abs().max(), df_aligned['FP2_Az'].abs().max())
-        max_x_force = max(force_data['FP1_Ax'].abs().max(), df_aligned['FP2_Ax'].abs().max())
-        max_y_force = max(force_data['FP1_Ay'].abs().max(), df_aligned['FP2_Ay'].abs().max())
+        max_z_force = max(force_data['FP1_Fz'].abs().max(), df_aligned['FP2_Fz'].abs().max())
+        max_x_force = max(force_data['FP1_Fx'].abs().max(), df_aligned['FP2_Fx'].abs().max())
+        max_y_force = max(force_data['FP1_Fy'].abs().max(), df_aligned['FP2_Fy'].abs().max())
         max_total_force = max(max_x_force, max_y_force, max_z_force)
 
         # Sets each force to a value between 0 and 1(1 being the maximum force) in order to apply scale factor
 
-        force_magnitudes = ['FP1_Az', 'FP1_Ay', 'FP2_Az', 'FP2_Ay', 'FP1_Ax', 'FP2_Ax'] 
-        for col in force_magnitudes:
+        force_vectors = ['FP1_Fz', 'FP1_Fy', 'FP2_Fz', 'FP2_Fy', 'FP1_Fx', 'FP2_Fx'] 
+        for col in force_vectors:
             force_data[col] = (force_data[col] / max_total_force).round(4)
 
         # Determines and applies scale factor to force 0-1 values
@@ -50,7 +49,7 @@ class VectorOverlay:
         scale_factor = self.frame_height*self.force_scaling
         scale_factor = scale_factor.astype(int)
 
-        for col in force_magnitudes:
+        for col in force_vectors:
             force_data[col] *= scale_factor.astype(int)
         return force_data
 

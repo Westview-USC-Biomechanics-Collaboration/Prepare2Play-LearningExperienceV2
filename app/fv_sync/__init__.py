@@ -291,9 +291,9 @@ def sync(view: str, parent_path: str, video_file: str, force_file: str):
     #Join the force and video data on frame number
     df_frames = df_dec.merge(df_video, on='FrameNumber', how='left')
 
-    #Copy the full 1200 Hz force data
+    #Copy the 1200 Hz force data
     df_full = df_force.copy()
-    #Fractional frame number for every force row (10 rows per frame)
+    #Fractional number for every force row (10 rows per frame)
     df_full['FrameNumber'] = lag + df_full.index / force_per_fps
 
     #Swap FP1 and FP2 if this view sees the plates mirrored

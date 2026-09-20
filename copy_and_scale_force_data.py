@@ -13,7 +13,6 @@ from scipy import ndimage, datasets
 
 class VectorOverlay:
     fps_annotated = 120
-    " abt fps"
     force_scaling = 0.8
 
     frame_width = int(cap.get(cap.CAP_PROP_FRAME_WIDTH))

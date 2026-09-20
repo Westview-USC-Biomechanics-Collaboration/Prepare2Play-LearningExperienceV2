@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 from scipy import signal
 from scipy.stats import cumfreq
 from scipy import ndimage, datasets
+from 
 
 class VectorOverlay:
     fps_annotated = 120
@@ -41,21 +42,46 @@ class VectorOverlay:
                 break
 
             #Sets start and end points for the vectors based on the force data in the dataframe
+            if view = "Long": 
+                #Fx is the point of pressure in the x direction, Fy is the point of pressure in the y direction
+                start_vector_x_fp1, start_vector_y_fp1 = self.matrix_transformation([int(row['FP1_Az'])], [int(row['FP1_Ay'])], view)
+            
+                #Ax is the magnitude and direction of the force vector in the x direction, Ay is the magnitude and direction of the force vector in the y direction
+                #FP1_Ax -> pressure point,  FP1_Fx -> Magnitude
+                end_vector_x_fp1 = [start_vector_x_fp1 + int(row['FP1_Az'])]
 
-            #Fx is the point of pressure in the x direction, Fy is the point of pressure in the y direction
-            start_vector_x_fp1, start_vector_y_fp1 = self.matrix_transformation([int(row['Fp1_Fx'])], [int(row['Fp1_Fy'])], view)
+                end_vector_y_fp1 = [start_vector_y_fp1 + int(row['FP1_Ay'])]
 
-            #Ax is the magnitude and direction of the force vector in the x direction, Ay is the magnitude and direction of the force vector in the y direction
-            end_vector_x_fp1 = [start_vector_x_fp1 + int(row['FP1_Ax'])]
+                start_vector_x_fp2, start_vector_y_fp2 = self.matrix_transformation([int(row['FP2_Fz'])], [int(row['FP2_Fy'])], view)
 
-            end_vector_y_fp1 = [start_vector_y_fp1 + int(row['FP1_Ay'])]
+                end_vector_x_fp2 = [start_vector_x_fp2 + int(row['FP2_Az'])]
 
-            start_vector_x_fp2, start_vector_y_fp2 = self.matrix_transformation([int(row['Fp2_Fx'])], [int(row['Fp2_Fy'])], view)
+                end_vector_y_fp2 = [start_vector_y_fp2 + int(row['FP2_Ay'])]
+            if view "Top"
+                start_vector_x_fp1, start_vector_y_fp1 = self.matrix_transformation([int(row['FP1_Ax'])], [int(row['FP1_Ay'])], view)
 
+                end_vector_x_fp1 = [start_vector_x_fp1 + int(row['FP1_Ax'])]
 
-            end_vector_x_fp2 = [start_vector_x_fp2 + int(row['FP2_Ax'])]
+                end_vector_y_fp1 = [start_vector_y_fp1 + int(row['FP1_Ay'])]
 
-            end_vector_y_fp2 = [start_vector_y_fp2 + int(row['FP2_Ay'])]
+                start_vector_x_fp2, start_vector_y_fp2 = self.matrix_transformation([int(row['FP2_Fx'])], [int(row['FP2_Fy'])], view)
+
+                end_vector_x_fp2 = [start_vector_x_fp2 + int(row['FP2_Ax'])]
+
+                end_vector_y_fp2 = [start_vector_y_fp2 + int(row['FP2_Ay'])]
+            if view = "Short"
+                start_vector_x_fp1, start_vector_y_fp1 = self.matrix_transformation([int(row['FP1_Ax'])], [int(row['FP1_Az'])], view)
+            
+                end_vector_x_fp1 = [start_vector_x_fp1 + int(row['FP1_Ax'])]
+
+                end_vector_y_fp1 = [start_vector_y_fp1 + int(row['FP1_Az'])]
+
+                start_vector_x_fp2, start_vector_y_fp2 = self.matrix_transformation([int(row['FP2_Fx'])], [int(row['FP2_Fz'])], view)
+
+                end_vector_x_fp2 = [start_vector_x_fp2 + int(row['FP2_Ax'])]
+
+                end_vector_y_fp2 = [start_vector_y_fp2 + int(row['FP2_Az'])]
+            
 
             cap.arrowedLine(frame, (start_vector_x_fp1, start_vector_y_fp1), (end_vector_x_fp1, end_vector_y_fp1), (0, 255, 0), 2)
             cap.arrowedLine(frame, (start_vector_x_fp2, start_vector_y_fp2), (end_vector_x_fp2, end_vector_y_fp2), (0, 0, 255), 2)

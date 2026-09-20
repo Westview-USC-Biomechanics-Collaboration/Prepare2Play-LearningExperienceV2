@@ -48,13 +48,13 @@ class VectorOverlay:
                 #Fx is the point of pressure in the x direction, Fy is the point of pressure in the y direction
                 start_vector_x_fp1, start_vector_y_fp1 = self.matrix_transformation([int(row['FP1_Az'])], [int(row['FP1_Ay'])], view)
             
-                #Ax is the magnitude and direction of the force vector in the x direction, Ay is the magnitude and direction of the force vector in the y direction
-                #FP1_Ax -> pressure point,  FP1_Fx -> Magnitude
-                end_vector_x_fp1 = [start_vector_x_fp1 + int(row['FP1_Az'])]
+                #Fx is the magnitude and direction of the force vector in the x direction, Fy is the magnitude and direction of the force vector in the y direction
+                #FP1_Ax -> pressure point,  FP1_Fx -> Magnitude+Direction
+                end_vector_x_fp1 = [start_vector_x_fp1 + int(row['FP1_Fz'])]
 
-                end_vector_y_fp1 = [start_vector_y_fp1 + int(row['FP1_Ay'])]
+                end_vector_y_fp1 = [start_vector_y_fp1 + int(row['FP1_Fy'])]
 
-                start_vector_x_fp2, start_vector_y_fp2 = self.matrix_transformation([int(row['FP2_Fz'])], [int(row['FP2_Fy'])], view)
+                start_vector_x_fp2, start_vector_y_fp2 = self.matrix_transformation([int(row['FP2_Az'])], [int(row['FP2_Ay'])], view)
 
                 end_vector_x_fp2 = [start_vector_x_fp2 + int(row['FP2_Fz'])]
 
@@ -62,11 +62,11 @@ class VectorOverlay:
             elif view.lower() == "top":
                 start_vector_x_fp1, start_vector_y_fp1 = self.matrix_transformation([int(row['FP1_Ax'])], [int(row['FP1_Ay'])], view)
 
-                end_vector_x_fp1 = [start_vector_x_fp1 + int(row['FP1_Ax'])]
+                end_vector_x_fp1 = [start_vector_x_fp1 + int(row['FP1_Fx'])]
 
-                end_vector_y_fp1 = [start_vector_y_fp1 + int(row['FP1_Ay'])]
+                end_vector_y_fp1 = [start_vector_y_fp1 + int(row['FP1_Fy'])]
 
-                start_vector_x_fp2, start_vector_y_fp2 = self.matrix_transformation([int(row['FP2_Fx'])], [int(row['FP2_Fy'])], view)
+                start_vector_x_fp2, start_vector_y_fp2 = self.matrix_transformation([int(row['FP2_Ax'])], [int(row['FP2_Ay'])], view)
 
                 end_vector_x_fp2 = [start_vector_x_fp2 + int(row['FP2_Fx'])]
 
@@ -74,11 +74,11 @@ class VectorOverlay:
             elif view.lower() == "short":
                 start_vector_x_fp1, start_vector_y_fp1 = self.matrix_transformation([int(row['FP1_Ax'])], [int(row['FP1_Az'])], view)
             
-                end_vector_x_fp1 = [start_vector_x_fp1 + int(row['FP1_Ax'])]
+                end_vector_x_fp1 = [start_vector_x_fp1 + int(row['FP1_Fx'])]
 
-                end_vector_y_fp1 = [start_vector_y_fp1 + int(row['FP1_Az'])]
+                end_vector_y_fp1 = [start_vector_y_fp1 + int(row['FP1_Fz'])]
 
-                start_vector_x_fp2, start_vector_y_fp2 = self.matrix_transformation([int(row['FP2_Fx'])], [int(row['FP2_Fz'])], view)
+                start_vector_x_fp2, start_vector_y_fp2 = self.matrix_transformation([int(row['FP2_Ax'])], [int(row['FP2_Az'])], view)
 
                 end_vector_x_fp2 = [start_vector_x_fp2 + int(row['FP2_Fx'])]
 

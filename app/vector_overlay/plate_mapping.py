@@ -10,7 +10,7 @@ class PlateMapping:
     def __init__(self, video_path):
         self.video_path = video_path
         
-    def FindCorners(self):
+    def find_corners(self):
         """
         Analyzes video and returns the average corner placement of forceplates.
         """
@@ -47,11 +47,11 @@ class PlateMapping:
             mask = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
             # Highlight yellow colors
             mask = cv.inRange(mask, low_yellow, high_yellow)
-            # Add blurring (helps to smoothen out lines)
-            mask = cv.GaussianBlur(mask, (7, 7), 0)
             # Close gaps
             kernel = np.ones((10, 10), np.uint8)
             mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel)
+            # Add blurring (helps to smoothen out lines)
+            mask = cv.GaussianBlur(mask, (7, 7), 0)
             
             ###               Find the corners                     ###
             contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -62,7 +62,7 @@ class PlateMapping:
             # Otherwise, take the largest contour's corners (AKA the forceplate)
             contour = max(contours, key=cv.contourArea)
             peri = cv.arcLength(contour, True)
-            frame_corners = cv.approxPolyDP(contour, 0.02 * peri, True)
+            frame_corners = cv.approxPolyDP(contour, 0.01 * peri, True)
             
             if len(frame_corners) == 4:
                 good_frames += 1
@@ -83,6 +83,31 @@ class PlateMapping:
         return corners;
 
 
-    # def CreateTransformationMatrix(self):
+    def CreateTransformationMatrix(self):
+        """
+        With real life points and screen pixels, create the transformation matrix.
+        """
+        
+        #   +0.300  TL ┌──────────┐     ┌──────────┐ TR
+        #              │ Plate 1  │ gap │ Plate 2  │
+        #   -0.300  BL └──────────┘     └──────────┘ BR
+        # 
+        #     -0.902                0                +0.902
+
+        # May tweak later to match actual forceplate sizes
+        forceplate_x = 0.902
+        forceplate_y = 0.300
+        
+        # Order: BL TL TR BR
+        forceplate_on_screen = self.find_corners()
+        forceplate_real_life = np.float32([[-forceplate_x, -forceplate_y],
+                                           [-forceplate_x, forceplate_y],
+                                           [forceplate_x, forceplate_y],
+                                           [forceplate_x, -forceplate_y]])
+        
+        matrix = cv.getPerspectiveTransform(forceplate_real_life, forceplate_on_screen)
+        
+        return matrix
+        
         
     # def ConvertPressurePointToScreenCoord(self):

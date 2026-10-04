@@ -5,6 +5,7 @@ Utility Functions
 
 __author__ = "ryanh41137@gmail.com"
 
-import config.Config
-import logging
+import config
 
+def get_config():
+    return config.Config

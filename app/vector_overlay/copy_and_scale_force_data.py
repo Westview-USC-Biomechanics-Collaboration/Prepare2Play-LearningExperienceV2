@@ -17,10 +17,14 @@ class VectorOverlay:
     fps_annotated = 120
     " abt fps"
     force_scaling = 0.8
-
-    frame_width = int(cv2.VideoCapture().get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cv2.VideoCapture().get(cv2.CAP_PROP_FRAME_HEIGHT))
-
+    def __init__(self, video_path):
+        video = cv2.VideoCapture(video_path)
+        if not video.isOpened():
+            raise IOError(f"Video Could Not Be Opened: {video_path}"))
+        self.frame_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.frame_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+        video.release()
+        
     def copy_and_scale_force_data(self, df_aligned):
         """
         Copies and scales the force data.
@@ -49,11 +53,10 @@ class VectorOverlay:
 
         # Determines and applies scale factor to force 0-1 values
         # Max height of a force is 0.8 frame height
-        scale_factor = self.frame_height*self.force_scaling
-        scale_factor = scale_factor.astype(int)
+        scale_factor = int(self.frame_height*self.force_scaling)
 
         for col in force_magnitudes:
-            force_data[col] *= scale_factor.astype(int)
+            force_data[col] *= scale_factor
         return force_data
 
 

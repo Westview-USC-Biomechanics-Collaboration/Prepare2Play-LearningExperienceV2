@@ -13,8 +13,6 @@ import numpy as np
 import pandas as pd
 
 
-# ================================================================ configs ===
-
 class LEDConfig:
     # Name: Long, Top, Side1, Side2
     view_name: str = "place holder"
@@ -81,7 +79,7 @@ class LEDDetectionTop(LEDConfig):
     view_name = "Top View"
     led_crop_x1, led_crop_y1 = 850, 950
     led_crop_x2, led_crop_y2 = 1050, 1080
-    swap_plate = True   # TODO: confirm against a real top-view recording
+    swap_plate = False
 
 
 class LEDDetectionSide1(LEDConfig):
@@ -106,14 +104,49 @@ view_map = {
 }
 
 
-# ============================================================== detection ===
+def get_config(view_type: str) -> LEDConfig:
+    #Error if the view isn't one of the known views
+    if view_type not in view_map:
+        raise ValueError(f"Unknown view type {view_type!r}, "
+                         f"expected one of {list(view_map)}")
+    #Create the config for the specific view
+    return view_map[view_type]()
 
-def find_led(video_path: str, config: LEDConfig) -> Tuple[int, int]:
+
+def open_video(video_path: str) -> cv2.VideoCapture:
     #Read the video
     cap = cv2.VideoCapture(video_path)
     #Error if the video can't be read
     if not cap.isOpened():
         raise ValueError(f"Cannot open video: {video_path}")
+    return cap
+
+
+def clamp_center(center: Tuple[int, int], width: int, height: int,
+                 d: int) -> Tuple[int, int]:
+    #Keep the center d pixels away from every edge so the signal box stays on the frame
+    cx = int(np.clip(center[0], d, width - d - 1))
+    cy = int(np.clip(center[1], d, height - d - 1))
+    return cx, cy
+
+
+def match_led(frame: np.ndarray, config: LEDConfig) -> Tuple[int, int]:
+    #Crop the frame to the set region
+    processed = config.process_crop_for_matching(config.get_crop_region(frame))
+
+    #Match the LED template from the cropped frame
+    result = cv2.matchTemplate(processed, config.led_template, cv2.TM_SQDIFF)
+    #Finds the minimum and maximum pixels of the LED template
+    _, _, min_loc, _ = cv2.minMaxLoc(result)
+
+    #Get the center from the min pixel corners of the led template
+    return (min_loc[0] + config.template_center_offset_x + config.led_crop_x1,
+            min_loc[1] + config.template_center_offset_y + config.led_crop_y1)
+
+
+def find_led(video_path: str, config: LEDConfig) -> Tuple[int, int]:
+    #Read the video
+    cap = open_video(video_path)
 
     #Number of frames
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -128,18 +161,8 @@ def find_led(video_path: str, config: LEDConfig) -> Tuple[int, int]:
         ok, frame = cap.read()
         if not ok:
             continue
-
-        #Crop the frame to the set region
-        processed = config.process_crop_for_matching(config.get_crop_region(frame))
-
-        #Match the LED template from the cropped frame
-        result = cv2.matchTemplate(processed, config.led_template, cv2.TM_SQDIFF)
-        #Finds the minimum and maximum pixels of the LED template
-        _, _, min_loc, _ = cv2.minMaxLoc(result)
-
-        #Get the center from the min pixel corners of the led template
-        centers.append((min_loc[0] + config.template_center_offset_x + config.led_crop_x1,
-                        min_loc[1] + config.template_center_offset_y + config.led_crop_y1))
+        #Where the template matched on this frame
+        centers.append(match_led(frame, config))
     #Release the cap
     cap.release()
 
@@ -156,21 +179,25 @@ def find_led(video_path: str, config: LEDConfig) -> Tuple[int, int]:
         print(f"[WARN] {config.view_name}: LED moved {spread} px across sampled frames")
 
     #Return the median center as for average a bad frame can throw it off
-    return tuple(np.median(points, axis=0).astype(int))
+    cx, cy = np.median(points, axis=0).astype(int)
+    return int(cx), int(cy)
 
 
 def video_led_signal(video_path: str, center: Tuple[int, int],
                      config: LEDConfig) -> pd.DataFrame:
     #Read the video
-    cap = cv2.VideoCapture(video_path)
-    #Error if the video can't be read
-    if not cap.isOpened():
-        raise ValueError(f"Cannot open video: {video_path}")
+    cap = open_video(video_path)
 
-    #Unpack the LED center
-    cx, cy = center
     #Half size of the box around the LED center
     d = config.signal_box
+    #Frame size, to keep the box from running off the edge
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    #Pull the center in from the edge, a negative slice would wrap around and give NaN
+    cx, cy = clamp_center(center, width, height, d)
+    if (cx, cy) != (int(center[0]), int(center[1])):
+        print(f"[WARN] {config.view_name}: LED center {tuple(center)} too close to "
+              f"the edge, moved to {(cx, cy)}")
     #Red score for every frame
     scores = []
 
@@ -201,14 +228,10 @@ def video_led_signal(video_path: str, center: Tuple[int, int],
 
 
 def process_view(view_type: str, video_path: str,
-                 led_center: Optional[Tuple[int, int]] = None) -> pd.DataFrame:
-    #Error if the view isn't one of the known views
-    if view_type not in view_map:
-        raise ValueError(f"Unknown view type {view_type!r}, "
-                         f"expected one of {list(view_map)}")
-
-    #Create the config for the specific view
-    config = view_map[view_type]()
+                 led_center: Optional[Tuple[int, int]] = None,
+                 show_mask: bool = False) -> pd.DataFrame:
+    #Create the config for the specific view, errors if the view is unknown
+    config = get_config(view_type)
     #Use the hand picked center if one was given, otherwise auto detect it
     if led_center is not None:
         center = (int(led_center[0]), int(led_center[1]))
@@ -217,5 +240,10 @@ def process_view(view_type: str, video_path: str,
         #Find where the LED is in the video
         center = find_led(video_path, config)
         print(f"[{config.view_name}] LED found at {center}")
+    #Pop up the black and white mask to see what the auto detection is matching on
+    if show_mask:
+        #Imported here because manual_led imports this module
+        from .manual_led import show_led_mask
+        show_led_mask(video_path, view_type, center)
     #Get the LED on/off signal for every frame
     return video_led_signal(video_path, center, config)

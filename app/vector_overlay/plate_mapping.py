@@ -6,18 +6,21 @@ real world points to coordinates on screen.
 import cv2 as cv
 import numpy as np
 
+### CODE FOR DEBUGGING IS AT THE BOTTOM ###
+
 class PlateMapping:
     def __init__(self, video_path):
         self.video_path = video_path
+        self.CreateTransformationMatrix()
         
-    def find_corners(self):
+    def find_corners(self, debug=False):
         """
         Analyzes video and returns the average corner placement of forceplates.
         """
         cap = cv.VideoCapture(self.video_path)
         
         if cap.get(cv.CAP_PROP_FRAME_COUNT) < 200:
-            print("Video Too Short")
+            print("Video Too Short or can't find video")
             cap.release()
             return None
             
@@ -50,8 +53,6 @@ class PlateMapping:
             # Close gaps
             kernel = np.ones((10, 10), np.uint8)
             mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel)
-            # Add blurring (helps to smoothen out lines)
-            mask = cv.GaussianBlur(mask, (7, 7), 0)
             
             ###               Find the corners                     ###
             contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -79,8 +80,22 @@ class PlateMapping:
             return None
         
         corners /= good_frames
+        
+        
+        ### HAD CLAUDE WRITE THIS DEBUG CODE; WILL REPLACE LATER
+        if debug:
+            mask_debug = cv.cvtColor(mask, cv.COLOR_GRAY2BGR)
+            for cx, cy in corners:
+                cv.circle(mask_debug, (int(cx - x_cutoff), int(cy - y_cutoff)), 8, (0, 255, 0), -1)
+            print(f"debug: {0 if corners is None else len(mask)} corner(s) found")
+            cv.namedWindow("mask debug", cv.WINDOW_NORMAL)
+            cv.resizeWindow("mask debug", 800, int(800 * mask_debug.shape[0] / mask_debug.shape[1]))
+            cv.imshow("mask debug", mask_debug)
+            cv.waitKey(0)
+            cv.destroyWindow("mask debug")
 
-        return corners;
+        cap.release()
+        return corners
 
 
     def CreateTransformationMatrix(self):
@@ -88,13 +103,13 @@ class PlateMapping:
         With real life points and screen pixels, create the transformation matrix.
         """
         
-        #   +0.300  TL ┌──────────┐     ┌──────────┐ TR
-        #              │ Plate 1  │ gap │ Plate 2  │
+        #   +0.300  TL ┌──────────┐ gap ┌──────────┐ TR
+        #              │ Plate 1  │     │ Plate 2  │
         #   -0.300  BL └──────────┘     └──────────┘ BR
         # 
         #     -0.902                0                +0.902
-
-        # May tweak later to match actual forceplate sizes
+        
+        
         forceplate_x = 0.902
         forceplate_y = 0.300
         
@@ -107,7 +122,26 @@ class PlateMapping:
         
         matrix = cv.getPerspectiveTransform(forceplate_real_life, forceplate_on_screen)
         
-        return matrix
+        self.matrix = matrix
         
         
-    # def ConvertPressurePointToScreenCoord(self):
+    def ConvertPressurePointToScreenCoord(self, pressure_points):
+        """
+        With the list of pressure_points, return a list of screen coordinates
+        """
+        
+        pressure_points = np.array(pressure_points, dtype=np.float32).reshape(-1, 1, 2)
+        
+        screen_pts = cv.perspectiveTransform(pressure_points, self.matrix)
+        
+        # convert to int coords
+        return screen_pts.reshape(-1, 2)
+    
+    
+    
+    
+# For debugging
+video_path = r"C:\Users\thelo\Downloads\Misc\testrun1.MP4"  # set to path in laptop
+detector = PlateMapping(video_path)
+corners = detector.find_corners(debug=True)
+#

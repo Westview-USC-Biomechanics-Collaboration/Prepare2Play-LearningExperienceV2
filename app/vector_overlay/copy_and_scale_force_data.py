@@ -20,7 +20,7 @@ class VectorOverlay:
     def __init__(self, video_path):
         video = cv2.VideoCapture(video_path)
         if not video.isOpened():
-            raise IOError(f"Video Could Not Be Opened: {video_path}"))
+            raise IOError(f"Video Could Not Be Opened: {video_path}")
         self.frame_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.frame_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
         video.release()

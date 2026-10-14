@@ -14,13 +14,12 @@ from scipy import ndimage, datasets
 class VectorOverlay:
     fps_annotated = 120
     force_scaling = 0.8
-    video = cap.VideoCapture(video)
 
-    def __init__(self, video_path)
+    def __init__(self, video_path):
         video = cv2.VideoCapture(video_path)
         self.frame_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.frame_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
-        video_capture.relase()
+        video.release()
     def matrix_transformation(self, pointx, pointy, view):
         #something something
         point_x_transformed = 5 * pointx
@@ -32,13 +31,13 @@ class VectorOverlay:
         return point_x_transformed, point_y_transformed
         
 
-    frame_width = int(cap.get(cap.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cap.CAP_PROP_FRAME_HEIGHT))
+    frame_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
     def draw_vectors_on_video(self, df_aligned_and_scaled, video, view):
        
         for index, row in df_aligned_and_scaled.iterrows():
 
-            video.set(cap.CAP_PROP_POS_FRAMES, index)
+            video.set(cv2.CAP_PROP_POS_FRAMES, index)
             ret, frame = video.read()
             if not ret:
                 break
@@ -85,7 +84,6 @@ class VectorOverlay:
                 end_vector_y_fp2 = [start_vector_y_fp2 + int(row['FP2_Fz'])]
             else:
                 raise ValueError(f"Unknown view: {view!r}")
-            
 
-            cap.arrowedLine(frame, (start_vector_x_fp1, start_vector_y_fp1), (end_vector_x_fp1, end_vector_y_fp1), (0, 255, 0), 2)
-            cap.arrowedLine(frame, (start_vector_x_fp2, start_vector_y_fp2), (end_vector_x_fp2, end_vector_y_fp2), (0, 0, 255), 2)
+            cv2.arrowedLine(frame, (start_vector_x_fp1, start_vector_y_fp1), (end_vector_x_fp1, end_vector_y_fp1), (0, 255, 0), 2)
+            cv2.arrowedLine(frame, (start_vector_x_fp2, start_vector_y_fp2), (end_vector_x_fp2, end_vector_y_fp2), (0, 0, 255), 2)

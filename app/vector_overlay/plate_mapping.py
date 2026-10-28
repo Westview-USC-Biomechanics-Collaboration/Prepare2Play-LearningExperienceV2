@@ -5,6 +5,7 @@ real world points to coordinates on screen.
 
 import cv2 as cv
 import numpy as np
+from loguru import logger
 
 ### CODE FOR DEBUGGING IS AT THE BOTTOM ###
 
@@ -20,7 +21,7 @@ class PlateMapping:
         cap = cv.VideoCapture(self.video_path)
         
         if cap.get(cv.CAP_PROP_FRAME_COUNT) < 200:
-            print("Video Too Short or can't find video")
+            logger.info(f"No good frames found or can't find video\n")
             cap.release()
             return None
             
@@ -38,7 +39,7 @@ class PlateMapping:
         while frame_index < 200:
             ret, frame = cap.read()
             if not ret:
-                print("Can't Find Frame")
+                logger.info(f"Can't find frame\n")
                 break
 
             ###                Crop the frame                      ###
@@ -74,8 +75,12 @@ class PlateMapping:
             
             frame_index += 1
 
+
+        ### IN THE FUTURE ADD A MANUAL ADJUSTMENT FOR OUTSIDE ###
+        ###    DIFFICULT FINDING PLATES OUTISDE               ###
+        
         if good_frames == 0:
-            print("No Good Frames Found")
+            logger.info(f"No good frames found\n")
             cap.release()
             return None
         
@@ -87,7 +92,6 @@ class PlateMapping:
             mask_debug = cv.cvtColor(mask, cv.COLOR_GRAY2BGR)
             for cx, cy in corners:
                 cv.circle(mask_debug, (int(cx - x_cutoff), int(cy - y_cutoff)), 8, (0, 255, 0), -1)
-            print(f"debug: {0 if corners is None else len(mask)} corner(s) found")
             cv.namedWindow("mask debug", cv.WINDOW_NORMAL)
             cv.resizeWindow("mask debug", 800, int(800 * mask_debug.shape[0] / mask_debug.shape[1]))
             cv.imshow("mask debug", mask_debug)
@@ -125,23 +129,55 @@ class PlateMapping:
         self.matrix = matrix
         
         
-    def ConvertPressurePointToScreenCoord(self, pressure_points):
+    def ConvertPressurePointToScreenCoord(self, pressure_points, force_plate):
         """
-        With the list of pressure_points, return a list of screen coordinates
+        With which forceplate and the list of pressure_points, return a list of screen coordinates
         """
         
         pressure_points = np.array(pressure_points, dtype=np.float32).reshape(-1, 1, 2)
         
+        # Look at diagram above to see which forceplate is forceplate 1 and 2
+        if force_plate == 1:
+            pressure_points += np.array([-0.451, 0])
+        else:
+            pressure_points += np.array([+0.451, 0])
         screen_pts = cv.perspectiveTransform(pressure_points, self.matrix)
         
-        # convert to int coords
-        return screen_pts.reshape(-1, 2)
+        return screen_pts.reshape(-1, 2).astype(int)
     
     
     
     
 # For debugging
-video_path = r"C:\Users\thelo\Downloads\Misc\testrun1.MP4"  # set to path in laptop
-detector = PlateMapping(video_path)
-corners = detector.find_corners(debug=True)
+if __name__ == "__main__":
+    video_path = r"C:\Users\thelo\Downloads\Misc\testrun1.MP4"  # set to path in laptop
+    detector = PlateMapping(video_path)
+    actual_corners = detector.find_corners(debug=True)
+    test_points = [
+        [0, 0]
+    ]
+    predicted_corners = detector.ConvertPressurePointToScreenCoord(test_points, 2)
+    
+    ### ALL OF THIS CODE IS FOR DEBUGGING PURPOSES ONLY
+    
+    # cap = cv.VideoCapture(video_path)
+    # ret, mask = cap.read()
+    
+    # mask = cv.cvtColor(mask, cv.COLOR_BGR2HSV)
+    # low_yellow = np.array([23, 50, 80])
+    # high_yellow = np.array([50, 255, 255])
+    # mask = cv.inRange(mask, low_yellow, high_yellow)
+    # mask_debug = mask
+    # mask_debug = cv.cvtColor(mask, cv.COLOR_GRAY2BGR)
+
+    # for cx, cy in predicted_corners:
+    #     cv.circle(mask_debug, (int(cx), int(cy)), 8, (255, 255, 0), -1)
+    # cv.namedWindow("debug", cv.WINDOW_NORMAL)
+    # cv.resizeWindow("debug", 800, int(800 * mask_debug.shape[0] / mask_debug.shape[1]))
+    # cv.imshow("debug", mask_debug)
+    # cv.waitKey(0)
+    # cv.destroyWindow("debug")
+    
+    logger.info(f"actual: {actual_corners}")
+    logger.info(f"predicted: {predicted_corners}")
 #

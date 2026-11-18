@@ -18,7 +18,8 @@ class VectorOverlay:
     frame_width = 0
     frame_height = 0
     video_fps = 0
-    
+
+    # Stores video width, height, fps, frame number
     def store_frame_data(self):
         self.frame_width = int(self.video.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.frame_height = int(self.video.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -29,6 +30,10 @@ class VectorOverlay:
         print(f"  Height: {self.frame_height}")
         print(f"  FPS: {self.video_fps}")
         print(f"  Frame Count: {self.video_frame_count}")
+        
+    # Copies force data, finds largest force from the dataframe, divides each force by
+    # largest force to convert the dataframe to values between 0 and 1. Multiplies each 
+    # value by a scale factor of the frame height.
     def copy_and_scale_force_data(self, df_aligned):
         """
         Copies and scales the force data.
@@ -72,6 +77,10 @@ class LongViewVectorOverlay(VectorOverlay):
 
         self.video = cv2.VideoCapture()
         self.store_frame_data()
+
+    # Uses aligned dataframe force and pressure values to define start and end points for vectors
+    # Start Point + vector direction & magnitude = End Point
+    # Draws vectors using cv2
     def draw_vectors_on_video(self, df_aligned_and_scaled, video):
         for index, row in df_aligned_and_scaled.iterrows():
 
